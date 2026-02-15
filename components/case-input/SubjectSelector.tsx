@@ -14,8 +14,10 @@ interface SubjectSelectorProps {
   onChange: (value: SubjectArea | undefined) => void;
 }
 
+const AUTO_VALUE = '___auto___';
+
 const subjectOptions = [
-  { value: '', label: '自动识别' },
+  { value: AUTO_VALUE, label: '自动识别' },
   ...Object.values(SubjectArea).map((subject) => ({
     value: subject,
     label: subject,
@@ -23,14 +25,24 @@ const subjectOptions = [
 ];
 
 export function SubjectSelector({ value, onChange }: SubjectSelectorProps) {
+  const selectValue = value || AUTO_VALUE;
+
+  const handleChange = (val: string) => {
+    if (val === AUTO_VALUE) {
+      onChange(undefined);
+    } else {
+      onChange(val as SubjectArea);
+    }
+  };
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-slate-700">
         科目分类（可选）
       </label>
       <Select
-        value={value || ''}
-        onValueChange={(val) => onChange(val ? (val as SubjectArea) : undefined)}
+        value={selectValue}
+        onValueChange={handleChange}
       >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="自动识别" />
