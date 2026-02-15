@@ -68,30 +68,45 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 详细环境变量诊断
+    // 读取 API Key - 支持多种环境变量名
+    let apiKey = process.env.DEEPSEEK_API_KEY;
+    
+    // 如果找不到，尝试其他可能的变量名
+    if (!apiKey) {
+      apiKey = process.env.DEEPSEEK_APIKEY;
+    }
+    if (!apiKey) {
+      apiKey = process.env.OPENAI_API_KEY; // 有些用户可能用这个
+    }
+    
     console.log('[API] Environment check:', {
       node_env: process.env.NODE_ENV,
       hasDeepseekKey: !!process.env.DEEPSEEK_API_KEY,
-      deepseekKeyLength: process.env.DEEPSEEK_API_KEY?.length,
-      allKeys: Object.keys(process.env).filter(k => 
-        k.toUpperCase().includes('DEEP') || k.toUpperCase().includes('API')
-      ),
+      keyLength: apiKey?.length,
     });
-    
-    const apiKey = process.env.DEEPSEEK_API_KEY;
     
     if (!apiKey) {
       console.error('[API] DEEPSEEK_API_KEY is not set!');
       return NextResponse.json(
         { 
           success: false, 
-          error: 'API密钥未配置，请在Railway环境变量中设置 DEEPSEEK_API_KEY',
-          debug: {
-            node_env: process.env.NODE_ENV,
-            available_keys: Object.keys(process.env).filter(k => 
-              !k.includes('SECRET') && !k.includes('KEY') && !k.includes('TOKEN')
-            ),
-          }
+          error: 'API密钥未配置。请在 Railway Dashboard → Variables 中添加 DEEPSEEK_API_KEY',
+          hint: '1. 进入 Railway Dashboard → 选择项目 → Variables
+2. 点击 New Variable
+3. Name: DEEPSEEK_API_KEY
+4. Value: 你的 API Key (以 sk- 开头)
+5. 点击 Add，然后重新部署 (Redeploy)'
+        },
+        { status: 500 }
+      );
+    }
+    
+    // 验证 API Key 格式
+    if (!apiKey.startsWith('sk-')) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'API Key 格式不正确。DeepSeek API Key 应该以 "sk-" 开头'
         },
         { status: 500 }
       );
