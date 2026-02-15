@@ -91,11 +91,7 @@ export async function POST(req: NextRequest) {
         { 
           success: false, 
           error: 'API密钥未配置。请在 Railway Dashboard → Variables 中添加 DEEPSEEK_API_KEY',
-          hint: '1. 进入 Railway Dashboard → 选择项目 → Variables
-2. 点击 New Variable
-3. Name: DEEPSEEK_API_KEY
-4. Value: 你的 API Key (以 sk- 开头)
-5. 点击 Add，然后重新部署 (Redeploy)'
+          hint: '设置步骤: 1.进入Railway Dashboard→Variables 2.点击New Variable 3.Name填写DEEPSEEK_API_KEY 4.Value填写你的API Key 5.点击Add后重新部署'
         },
         { status: 500 }
       );
