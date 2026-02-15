@@ -1,65 +1,200 @@
-import Image from "next/image";
+'use client';
+
+import { useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Header } from '@/components/layout/Header';
+import { LoadingOverlay } from '@/components/layout/LoadingOverlay';
+import { CaseInputPanel } from '@/components/case-input/CaseInputPanel';
+import { AnalysisPanel } from '@/components/analysis-result/AnalysisPanel';
+import { QuizPanel } from '@/components/quiz-section/QuizPanel';
+import { useCaseStore } from '@/stores/useCaseStore';
+import { CaseInput, CaseAnalysis, StreamChunk } from '@/types';
 
 export default function Home() {
+  const {
+    currentCase,
+    currentAnalysis,
+    isAnalyzing,
+    thinkingContent,
+    error,
+    setCurrentCase,
+    setAnalysis,
+    setAnalyzing,
+    setError,
+    appendThinking,
+    clearThinking,
+    saveToHistory,
+  } = useCaseStore();
+
+  const handleSubmit = useCallback(async (caseData: CaseInput) => {
+    setCurrentCase(caseData);
+    setAnalyzing(true);
+    setError(null);
+    clearThinking();
+
+    try {
+      const response = await fetch('/api/analyze-case', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          caseContent: caseData.content,
+          subjectArea: caseData.subjectArea,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '请求失败');
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('无法读取响应');
+      }
+
+      let buffer = '';
+      let accumulatedThinking = '';
+      let finalAnalysis: CaseAnalysis | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+
+          try {
+            const chunk: StreamChunk = JSON.parse(line);
+            
+            if (chunk.type === 'thinking' && chunk.content) {
+              accumulatedThinking += chunk.content;
+              appendThinking(chunk.content);
+            } else if (chunk.type === 'analysis' && chunk.data) {
+              finalAnalysis = chunk.data;
+            } else if (chunk.type === 'error') {
+              throw new Error(chunk.error || '分析失败');
+            }
+          } catch (e) {
+            // Ignore parse errors for incomplete chunks
+          }
+        }
+      }
+
+      if (finalAnalysis) {
+        setAnalysis(finalAnalysis);
+        // 保存到历史记录
+        setTimeout(() => {
+          saveToHistory();
+        }, 0);
+      } else {
+        throw new Error('未能获取分析结果');
+      }
+
+    } catch (err) {
+      console.error('Analysis error:', err);
+      setError(err instanceof Error ? err.message : '分析过程中出现错误');
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [setCurrentCase, setAnalyzing, setError, clearThinking, appendThinking, setAnalysis, saveToHistory]);
+
+  const isStreaming = isAnalyzing && thinkingContent.length > 0 && !currentAnalysis;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen bg-slate-50">
+      <Header />
+      
+      <main className="pt-16 min-h-screen">
+        <div className="max-w-[1920px] mx-auto p-4 sm:p-6 lg:p-8">
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              {error}
+            </motion.div>
+          )}
+
+          {/* Desktop & Tablet Layout */}
+          <div className="hidden md:grid md:grid-cols-[2fr_3fr_2fr] lg:grid-cols-3 gap-6">
+            {/* Left: Input Panel */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              <CaseInputPanel 
+                onSubmit={handleSubmit} 
+                loading={isAnalyzing} 
+              />
+            </motion.div>
+
+            {/* Center: Analysis Panel */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <AnalysisPanel
+                analysis={currentAnalysis}
+                thinkingContent={thinkingContent}
+                loading={isAnalyzing && !thinkingContent}
+                isStreaming={isStreaming}
+              />
+            </motion.div>
+
+            {/* Right: Quiz Panel */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <QuizPanel
+                question={currentAnalysis?.generatedQuestion || null}
+                loading={isAnalyzing}
+              />
+            </motion.div>
+          </div>
+
+          {/* Mobile Layout */}
+          <div className="md:hidden space-y-4">
+            <CaseInputPanel 
+              onSubmit={handleSubmit} 
+              loading={isAnalyzing} 
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            
+            {currentAnalysis && (
+              <>
+                <AnalysisPanel
+                  analysis={currentAnalysis}
+                  thinkingContent={thinkingContent}
+                  loading={false}
+                  isStreaming={false}
+                />
+                <QuizPanel
+                  question={currentAnalysis.generatedQuestion}
+                  loading={false}
+                />
+              </>
+            )}
+          </div>
         </div>
       </main>
+
+      {/* Loading Overlay */}
+      <LoadingOverlay 
+        isLoading={isAnalyzing && !thinkingContent} 
+        message="AI正在深度分析案例..."
+      />
     </div>
   );
 }
