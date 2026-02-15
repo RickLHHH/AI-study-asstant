@@ -69,9 +69,15 @@ export async function POST(req: NextRequest) {
     }
 
     const apiKey = process.env.DEEPSEEK_API_KEY;
+    console.log('API Key check:', { 
+      exists: !!apiKey, 
+      length: apiKey?.length,
+      envVars: Object.keys(process.env).filter(k => k.includes('DEEPSEEK') || k.includes('API'))
+    });
+    
     if (!apiKey) {
       return NextResponse.json(
-        { success: false, error: 'API密钥未配置' },
+        { success: false, error: 'API密钥未配置，请在Railway环境变量中设置 DEEPSEEK_API_KEY' },
         { status: 500 }
       );
     }
