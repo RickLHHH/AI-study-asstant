@@ -17,7 +17,7 @@ interface ThinkingChainProps {
 }
 
 export function ThinkingChain({ content, isStreaming = false }: ThinkingChainProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
