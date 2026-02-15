@@ -68,16 +68,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.DEEPSEEK_API_KEY;
-    console.log('API Key check:', { 
-      exists: !!apiKey, 
-      length: apiKey?.length,
-      envVars: Object.keys(process.env).filter(k => k.includes('DEEPSEEK') || k.includes('API'))
+    // 详细环境变量诊断
+    console.log('[API] Environment check:', {
+      node_env: process.env.NODE_ENV,
+      hasDeepseekKey: !!process.env.DEEPSEEK_API_KEY,
+      deepseekKeyLength: process.env.DEEPSEEK_API_KEY?.length,
+      allKeys: Object.keys(process.env).filter(k => 
+        k.toUpperCase().includes('DEEP') || k.toUpperCase().includes('API')
+      ),
     });
     
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    
     if (!apiKey) {
+      console.error('[API] DEEPSEEK_API_KEY is not set!');
       return NextResponse.json(
-        { success: false, error: 'API密钥未配置，请在Railway环境变量中设置 DEEPSEEK_API_KEY' },
+        { 
+          success: false, 
+          error: 'API密钥未配置，请在Railway环境变量中设置 DEEPSEEK_API_KEY',
+          debug: {
+            node_env: process.env.NODE_ENV,
+            available_keys: Object.keys(process.env).filter(k => 
+              !k.includes('SECRET') && !k.includes('KEY') && !k.includes('TOKEN')
+            ),
+          }
+        },
         { status: 500 }
       );
     }
