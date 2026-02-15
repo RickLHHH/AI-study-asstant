@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Send, FileText, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,12 +30,12 @@ export function CaseInputPanel({ onSubmit, loading }: CaseInputPanelProps) {
   const { currentCase } = useCaseStore();
 
   // 如果历史记录中有当前案例，恢复其内容
-  useState(() => {
+  useEffect(() => {
     if (currentCase) {
       setContent(currentCase.content);
       setSubjectArea(currentCase.subjectArea);
     }
-  });
+  }, [currentCase]);
 
   const handleSubmit = () => {
     if (content.length < 20) {
@@ -49,7 +49,9 @@ export function CaseInputPanel({ onSubmit, loading }: CaseInputPanelProps) {
 
     setError(null);
     const caseData: CaseInput = {
-      id: crypto.randomUUID(),
+      id: typeof crypto !== 'undefined' && crypto.randomUUID 
+        ? crypto.randomUUID() 
+        : Math.random().toString(36).substring(2, 15),
       content: content.trim(),
       subjectArea,
       createdAt: Date.now(),
