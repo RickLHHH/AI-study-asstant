@@ -1,21 +1,18 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { CaseInput, CaseAnalysis, UserAnswer, CaseHistoryItem, SubjectArea } from '@/types';
 
 interface CaseState {
-  // 当前状态
   currentCase: CaseInput | null;
   currentAnalysis: CaseAnalysis | null;
   isAnalyzing: boolean;
   error: string | null;
-  thinkingContent: string; // 流式思维链内容
-  
-  // 历史记录（最多保存20条）
+  thinkingContent: string;
   history: CaseHistoryItem[];
+  _hasHydrated: boolean;
   
-  // 动作
   setCurrentCase: (caseData: CaseInput) => void;
   setAnalysis: (analysis: CaseAnalysis) => void;
   setAnalyzing: (status: boolean) => void;
@@ -27,6 +24,7 @@ interface CaseState {
   clearHistory: () => void;
   loadCaseFromHistory: (id: string) => void;
   saveUserAnswer: (answer: UserAnswer) => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
 export const useCaseStore = create<CaseState>()(
@@ -38,6 +36,9 @@ export const useCaseStore = create<CaseState>()(
       error: null,
       thinkingContent: '',
       history: [],
+      _hasHydrated: false,
+      
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
       
       setCurrentCase: (caseData) => set({ 
         currentCase: caseData, 
@@ -107,7 +108,11 @@ export const useCaseStore = create<CaseState>()(
     }),
     {
       name: 'fakao-case-storage',
-      partialize: (state) => ({ history: state.history })
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ history: state.history }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

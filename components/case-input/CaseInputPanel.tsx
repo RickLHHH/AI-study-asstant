@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Send, FileText, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,21 +23,39 @@ interface CaseInputPanelProps {
   loading: boolean;
 }
 
+// Safe UUID generation that works in all environments
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments without crypto.randomUUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 export function CaseInputPanel({ onSubmit, loading }: CaseInputPanelProps) {
   const [content, setContent] = useState('');
   const [subjectArea, setSubjectArea] = useState<SubjectArea | undefined>();
   const [error, setError] = useState<string | null>(null);
-  const { currentCase } = useCaseStore();
+  const [isMounted, setIsMounted] = useState(false);
+  const { currentCase, _hasHydrated } = useCaseStore();
 
-  // 如果历史记录中有当前案例，恢复其内容
   useEffect(() => {
-    if (currentCase) {
+    setIsMounted(true);
+  }, []);
+
+  // Restore content from currentCase after hydration
+  useEffect(() => {
+    if (isMounted && _hasHydrated && currentCase) {
       setContent(currentCase.content);
       setSubjectArea(currentCase.subjectArea);
     }
-  }, [currentCase]);
+  }, [isMounted, _hasHydrated, currentCase]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (content.length < 20) {
       setError('案例内容至少需要20字');
       return;
@@ -49,25 +67,40 @@ export function CaseInputPanel({ onSubmit, loading }: CaseInputPanelProps) {
 
     setError(null);
     const caseData: CaseInput = {
-      id: typeof crypto !== 'undefined' && crypto.randomUUID 
-        ? crypto.randomUUID() 
-        : Math.random().toString(36).substring(2, 15),
+      id: generateId(),
       content: content.trim(),
       subjectArea,
       createdAt: Date.now(),
       status: 'pending',
     };
     onSubmit(caseData);
-  };
+  }, [content, subjectArea, onSubmit]);
 
-  const handleUsePreset = () => {
+  const handleUsePreset = useCallback(() => {
     setContent(PRESET_CASE);
     setSubjectArea(SubjectArea.CRIMINAL_LAW);
     setError(null);
-  };
+  }, []);
 
   const charCount = content.length;
   const isValid = charCount >= 20 && charCount <= 2000;
+
+  // Prevent hydration mismatch
+  if (!isMounted) {
+    return (
+      <Card className="h-full">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <FileText className="w-5 h-5 text-blue-600" />
+            案例输入
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="h-[200px] bg-slate-100 rounded animate-pulse" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full">
