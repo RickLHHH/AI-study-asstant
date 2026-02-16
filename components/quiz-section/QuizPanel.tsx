@@ -90,8 +90,9 @@ export function QuizPanel({ question, loading, phase = 'idle' }: QuizPanelProps)
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // 未开始分析状态 - 用户刚进入页面，什么都没做
-  if (!question && !loading && phase === 'idle') {
+  // ===== 状态1: 未开始分析 =====
+  // 用户刚进入页面，或分析已完成但无题目
+  if (!loading && !question) {
     return (
       <Card className="h-full flex flex-col items-center justify-center p-8 text-center">
         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -111,67 +112,55 @@ export function QuizPanel({ question, loading, phase = 'idle' }: QuizPanelProps)
     );
   }
 
-  // 分析早期阶段 - 正在理解案例/推理中
-  if (!question && loading && (phase === 'understanding' || phase === 'reasoning' || phase === 'idle')) {
+  // ===== 状态2: 分析进行中，题目尚未生成 =====
+  // 包括：understanding / reasoning / generating / complete（但还没收到题目）
+  if (loading && !question) {
+    // 在 generating 阶段显示更明确的提示
+    const isGenerating = phase === 'generating';
+    
     return (
-      <Card className="h-full border-blue-200 bg-blue-50/30">
-        <CardContent className="p-6 space-y-4">
-          <div className="flex items-center gap-3 text-blue-600">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-            >
-              <Loader2 className="w-5 h-5" />
-            </motion.div>
-            <span className="text-sm font-medium">正在准备题目...</span>
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-20 w-full bg-blue-100/50" />
-            <div className="flex gap-2">
-              <Skeleton className="h-12 w-full bg-blue-100/50" />
-              <Skeleton className="h-12 w-full bg-blue-100/50" />
-            </div>
-            <div className="flex gap-2">
-              <Skeleton className="h-12 w-full bg-blue-100/50" />
-              <Skeleton className="h-12 w-full bg-blue-100/50" />
-            </div>
-          </div>
-          <p className="text-xs text-slate-500 text-center">
-            题目将在案例分析完成后自动生成
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // 题目生成阶段 - 推理完成，正在生成题目
-  if (!question && loading && phase === 'generating') {
-    return (
-      <Card className="h-full flex flex-col items-center justify-center p-8 text-center border-amber-200 bg-amber-50/30">
-        <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-4 relative">
+      <Card className={`h-full flex flex-col items-center justify-center p-8 text-center ${
+        isGenerating ? 'border-amber-200 bg-amber-50/30' : 'border-blue-200 bg-blue-50/30'
+      }`}>
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 relative ${
+          isGenerating ? 'bg-amber-100' : 'bg-blue-100'
+        }`}>
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
           >
-            <Sparkles className="w-10 h-10 text-amber-500" />
+            {isGenerating ? (
+              <Sparkles className="w-10 h-10 text-amber-500" />
+            ) : (
+              <Loader2 className="w-10 h-10 text-blue-500" />
+            )}
           </motion.div>
-          <motion.div
-            className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <Loader2 className="w-3 h-3 text-white animate-spin" />
-          </motion.div>
+          {isGenerating && (
+            <motion.div
+              className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <Loader2 className="w-3 h-3 text-white animate-spin" />
+            </motion.div>
+          )}
         </div>
         <h3 className="text-lg font-medium text-slate-700 mb-2">
-          题目生成中
+          {isGenerating ? '题目生成中' : '正在准备题目...'}
         </h3>
         <p className="text-sm text-slate-500 max-w-sm mb-4">
-          正在基于案例分析结果生成符合法考大纲的模拟题...
+          {isGenerating 
+            ? '正在基于案例分析结果生成符合法考大纲的模拟题...'
+            : 'AI正在分析案例，题目将在分析完成后自动生成...'
+          }
         </p>
-        <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-100 px-3 py-2 rounded-full">
+        <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-full ${
+          isGenerating 
+            ? 'text-amber-700 bg-amber-100' 
+            : 'text-blue-700 bg-blue-100'
+        }`}>
           <Loader2 className="w-3 h-3 animate-spin" />
-          <span>请稍候，马上就好</span>
+          <span>{isGenerating ? '请稍候，马上就好' : '分析进行中...'}</span>
         </div>
       </Card>
     );
