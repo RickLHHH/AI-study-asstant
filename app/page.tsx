@@ -7,9 +7,9 @@ import { LoadingOverlay } from '@/components/layout/LoadingOverlay';
 import { CaseInputPanel } from '@/components/case-input/CaseInputPanel';
 import { AnalysisPanel } from '@/components/analysis-result/AnalysisPanel';
 import { QuizPanel } from '@/components/quiz-section/QuizPanel';
-import { AnalysisProgress, AnalysisPhase } from '@/components/analysis-result/AnalysisProgress';
+import { AnalysisProgress } from '@/components/analysis-result/AnalysisProgress';
 import { useCaseStore } from '@/stores/useCaseStore';
-import { CaseInput, CaseAnalysis, StreamChunk } from '@/types';
+import { CaseInput, CaseAnalysis, StreamChunk, AnalysisPhase } from '@/types';
 
 export default function Home() {
   const {
@@ -28,14 +28,14 @@ export default function Home() {
   } = useCaseStore();
 
   // 分析阶段状态
-  const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase>('understanding');
+  const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase>('idle');
 
   const handleSubmit = useCallback(async (caseData: CaseInput) => {
     setCurrentCase(caseData);
     setAnalyzing(true);
     setError(null);
     clearThinking();
-    setAnalysisPhase('understanding');
+    setAnalysisPhase('idle');  // 初始为 idle，收到 thinking 后变为 understanding
 
     try {
       const response = await fetch('/api/analyze-case', {
@@ -81,8 +81,10 @@ export default function Home() {
             if (chunk.type === 'thinking' && chunk.content) {
               accumulatedThinking += chunk.content;
               appendThinking(chunk.content);
-              // 进入推理阶段
-              if (analysisPhase === 'understanding') {
+              // 从 idle 进入 understanding，然后到 reasoning
+              if (analysisPhase === 'idle') {
+                setAnalysisPhase('understanding');
+              } else if (analysisPhase === 'understanding' && accumulatedThinking.length > 100) {
                 setAnalysisPhase('reasoning');
               }
             } else if (chunk.type === 'analysis' && chunk.data) {
@@ -122,7 +124,14 @@ export default function Home() {
     if (isAnalyzing && thinkingContent.length > 200 && !currentAnalysis) {
       setAnalysisPhase('generating');
     }
-  }, [thinkingContent, isAnalyzing, currentAnalysis]); 
+  }, [thinkingContent, isAnalyzing, currentAnalysis]);
+
+  // 分析完成时重置状态
+  useEffect(() => {
+    if (currentAnalysis) {
+      setAnalysisPhase('complete');
+    }
+  }, [currentAnalysis]); 
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -162,8 +171,8 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="space-y-4"
             >
-              {/* Analysis Progress Indicator */}
-              {(isAnalyzing || analysisPhase === 'complete') && (
+              {/* Analysis Progress Indicator - 只在分析中显示 */}
+              {isAnalyzing && analysisPhase !== 'idle' && (
                 <AnalysisProgress 
                   phase={analysisPhase} 
                   thinkingLength={thinkingContent.length}
@@ -197,8 +206,8 @@ export default function Home() {
               loading={isAnalyzing} 
             />
             
-            {/* Mobile Analysis Progress */}
-            {(isAnalyzing || analysisPhase === 'complete') && (
+            {/* Mobile Analysis Progress - 只在分析中显示 */}
+            {isAnalyzing && analysisPhase !== 'idle' && (
               <AnalysisProgress 
                 phase={analysisPhase} 
                 thinkingLength={thinkingContent.length}

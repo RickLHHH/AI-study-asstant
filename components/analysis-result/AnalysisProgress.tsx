@@ -2,10 +2,9 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, BookOpen, FileQuestion, CheckCircle2 } from 'lucide-react';
+import { Brain, BookOpen, FileQuestion, CheckCircle2, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-
-export type AnalysisPhase = 'understanding' | 'reasoning' | 'generating' | 'complete';
+import { AnalysisPhase } from '@/types';
 
 interface AnalysisProgressProps {
   phase: AnalysisPhase;
@@ -13,7 +12,7 @@ interface AnalysisProgressProps {
 }
 
 interface PhaseConfig {
-  key: AnalysisPhase;
+  key: Exclude<AnalysisPhase, 'idle'>;
   label: string;
   icon: React.ReactNode;
   description: string;
@@ -21,6 +20,41 @@ interface PhaseConfig {
 }
 
 export function AnalysisProgress({ phase, thinkingLength = 0 }: AnalysisProgressProps) {
+  // 如果 phase 是 idle，显示默认的 loading 状态
+  if (phase === 'idle') {
+    return (
+      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+              >
+                <Loader2 className="w-5 h-5 text-blue-600" />
+              </motion.div>
+              <span className="font-medium text-slate-800">准备分析...</span>
+            </div>
+            <span className="text-sm text-slate-500">0%</span>
+          </div>
+          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-blue-500 to-indigo-500"
+              initial={{ width: '0%' }}
+              animate={{ width: '5%' }}
+              transition={{ 
+                type: 'spring',
+                stiffness: 50,
+                damping: 15
+              }}
+            />
+          </div>
+          <p className="text-xs text-slate-500 mt-2">正在初始化AI分析引擎...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const phases: PhaseConfig[] = [
     {
       key: 'understanding',

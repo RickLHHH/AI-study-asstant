@@ -11,6 +11,7 @@ const SYSTEM_PROMPT = `你是一位拥有15年教学经验的资深法考培训�
 4. 思维链(thinking)要展示你的法律推理过程，不少于200字
 5. 生成的题目必须符合2024年法考大纲要求
 6. 干扰项必须有迷惑性但逻辑上必然错误，符合常见错误思维
+7. 学习建议(studyAdvice)必须按结构化格式输出，内容要具体实用
 
 JSON Schema:
 {
@@ -53,8 +54,14 @@ JSON Schema:
     "commonMistakes": ["string"],
     "relatedArticles": ["string"]
   },
-  "studyAdvice": "string (学习建议)"
-}`;
+  "studyAdvice": {
+    "summary": "string (用1-2句话概括本案例的核心要点)",
+    "keyPoints": ["string (核心考点1)", "string (核心考点2)", "string (核心考点3)"],
+    "commonMistakes": ["string (常见错误1)", "string (常见错误2)"],
+    "studyTips": ["string (复习建议1)", "string (复习建议2)"],
+    "relatedTopics": ["string (关联考点1)", "string (关联考点2)"]
+  }
+}`
 
 export async function POST(req: NextRequest) {
   try {

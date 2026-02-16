@@ -43,6 +43,18 @@ export interface AnalyzeCaseResponse {
   error?: string;
 }
 
+// ==================== 分析阶段类型 ====================
+export type AnalysisPhase = 'idle' | 'understanding' | 'reasoning' | 'generating' | 'complete';
+
+// ==================== 学习建议 ====================
+export interface StudyAdvice {
+  summary: string;           // 一句话总结核心要点
+  keyPoints: string[];       // 核心知识点列表
+  commonMistakes: string[];  // 常见错误分析
+  studyTips: string[];       // 复习建议
+  relatedTopics: string[];   // 关联考点
+}
+
 // ==================== AI分析结果 ====================
 export interface CaseAnalysis {
   caseId: string;
@@ -52,7 +64,7 @@ export interface CaseAnalysis {
   caseType: string;          // 案例类型标签
   difficulty: DifficultyInfo;
   generatedQuestion: GeneratedQuestion;
-  studyAdvice: string;       // 学习建议
+  studyAdvice: StudyAdvice;  // 结构化学习建议
 }
 
 export interface LegalBasis {

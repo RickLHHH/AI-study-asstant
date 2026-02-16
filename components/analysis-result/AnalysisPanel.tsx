@@ -1,6 +1,6 @@
 'use client';
 
-import { FileSearch, Sparkles, BookOpen, Target, AlertCircle, GraduationCap } from 'lucide-react';
+import { FileSearch, Sparkles, BookOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { ThinkingChain } from './ThinkingChain';
 import { LegalBasisCard } from './LegalBasisCard';
 import { KeyPointsRadar } from './KeyPointsRadar';
 import { DifficultyBadge } from './DifficultyBadge';
+import { StudyAdviceCard } from './StudyAdviceCard';
 import { motion } from 'framer-motion';
 
 interface AnalysisPanelProps {
@@ -124,19 +125,7 @@ export function AnalysisPanel({ analysis, thinkingContent, loading, isStreaming 
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <GraduationCap className="w-5 h-5 text-emerald-600" />
-                  学习建议
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-slate-700 leading-relaxed">
-                  {analysis.studyAdvice}
-                </p>
-              </CardContent>
-            </Card>
+            <StudyAdviceCard advice={analysis.studyAdvice} />
           </motion.div>
         </>
       )}
