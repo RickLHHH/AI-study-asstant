@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GeneratedQuestion, UserAnswer, QuestionType } from '@/types';
+import { GeneratedQuestion, UserAnswer, QuestionType, AnalysisPhase } from '@/types';
 import { useCaseStore } from '@/stores/useCaseStore';
 import { QuestionCard } from './QuestionCard';
 import { OptionButton } from './OptionButton';
@@ -16,9 +16,10 @@ import { ExplanationView } from './ExplanationView';
 interface QuizPanelProps {
   question: GeneratedQuestion | null;
   loading: boolean;
+  phase?: AnalysisPhase;
 }
 
-export function QuizPanel({ question, loading }: QuizPanelProps) {
+export function QuizPanel({ question, loading, phase = 'idle' }: QuizPanelProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [hasStarted, setHasStarted] = useState(false); // 是否点击了"开始答题"
@@ -89,8 +90,29 @@ export function QuizPanel({ question, loading }: QuizPanelProps) {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // 分析中状态
-  if (loading) {
+  // 未开始分析状态 - 用户刚进入页面，什么都没做
+  if (!question && !loading && phase === 'idle') {
+    return (
+      <Card className="h-full flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+          <ClipboardList className="w-10 h-10 text-slate-400" />
+        </div>
+        <h3 className="text-lg font-medium text-slate-700 mb-2">
+          等待答题
+        </h3>
+        <p className="text-sm text-slate-500 max-w-sm mb-4">
+          在左侧输入案例并点击"开始分析"，AI将自动生成模拟题供您练习
+        </p>
+        <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-100 px-3 py-2 rounded-full">
+          <FileText className="w-3 h-3" />
+          <span>请先完成案例分析</span>
+        </div>
+      </Card>
+    );
+  }
+
+  // 分析早期阶段 - 正在理解案例/推理中
+  if (!question && loading && (phase === 'understanding' || phase === 'reasoning' || phase === 'idle')) {
     return (
       <Card className="h-full border-blue-200 bg-blue-50/30">
         <CardContent className="p-6 space-y-4">
@@ -122,8 +144,8 @@ export function QuizPanel({ question, loading }: QuizPanelProps) {
     );
   }
 
-  // 等待题目生成状态 - 只有当正在分析中时才显示
-  if (!question && loading) {
+  // 题目生成阶段 - 推理完成，正在生成题目
+  if (!question && loading && phase === 'generating') {
     return (
       <Card className="h-full flex flex-col items-center justify-center p-8 text-center border-amber-200 bg-amber-50/30">
         <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-4 relative">
@@ -150,27 +172,6 @@ export function QuizPanel({ question, loading }: QuizPanelProps) {
         <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-100 px-3 py-2 rounded-full">
           <Loader2 className="w-3 h-3 animate-spin" />
           <span>请稍候，马上就好</span>
-        </div>
-      </Card>
-    );
-  }
-
-  // 未开始分析状态 - 用户刚进入页面，什么都没做
-  if (!question && !loading) {
-    return (
-      <Card className="h-full flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-          <ClipboardList className="w-10 h-10 text-slate-400" />
-        </div>
-        <h3 className="text-lg font-medium text-slate-700 mb-2">
-          等待答题
-        </h3>
-        <p className="text-sm text-slate-500 max-w-sm mb-4">
-          在左侧输入案例并点击"开始分析"，AI将自动生成模拟题供您练习
-        </p>
-        <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-100 px-3 py-2 rounded-full">
-          <FileText className="w-3 h-3" />
-          <span>请先完成案例分析</span>
         </div>
       </Card>
     );

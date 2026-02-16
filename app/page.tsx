@@ -195,6 +195,7 @@ export default function Home() {
               <QuizPanel
                 question={currentAnalysis?.generatedQuestion || null}
                 loading={isAnalyzing}
+                phase={analysisPhase}
               />
             </motion.div>
           </div>
@@ -225,6 +226,7 @@ export default function Home() {
                 <QuizPanel
                   question={currentAnalysis.generatedQuestion}
                   loading={false}
+                  phase={analysisPhase}
                 />
               </>
             )}
