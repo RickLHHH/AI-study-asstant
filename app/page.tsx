@@ -29,12 +29,14 @@ export default function Home() {
 
   // 分析阶段状态
   const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase>('idle');
+  const [hasAnalysisStarted, setHasAnalysisStarted] = useState(false);  // 用户是否点击了开始分析
 
   const handleSubmit = useCallback(async (caseData: CaseInput) => {
     setCurrentCase(caseData);
     setAnalyzing(true);
     setError(null);
     clearThinking();
+    setHasAnalysisStarted(true);  // 标记分析已开始
     setAnalysisPhase('idle');  // 初始为 idle，收到 thinking 后变为 understanding
 
     try {
@@ -101,6 +103,7 @@ export default function Home() {
       if (finalAnalysis) {
         setAnalysis(finalAnalysis);
         setAnalysisPhase('complete');
+        // 分析完成后保持 hasAnalysisStarted 为 true，这样题目会显示
         // 保存到历史记录
         setTimeout(() => {
           saveToHistory();
@@ -112,6 +115,7 @@ export default function Home() {
     } catch (err) {
       console.error('Analysis error:', err);
       setError(err instanceof Error ? err.message : '分析过程中出现错误');
+      setHasAnalysisStarted(false);  // 出错时重置状态
     } finally {
       setAnalyzing(false);
     }
@@ -195,7 +199,7 @@ export default function Home() {
               <QuizPanel
                 question={currentAnalysis?.generatedQuestion || null}
                 loading={isAnalyzing}
-                phase={analysisPhase}
+                analysisStarted={hasAnalysisStarted}
               />
             </motion.div>
           </div>
@@ -226,7 +230,7 @@ export default function Home() {
                 <QuizPanel
                   question={currentAnalysis.generatedQuestion}
                   loading={false}
-                  phase={analysisPhase}
+                  analysisStarted={hasAnalysisStarted}
                 />
               </>
             )}
