@@ -92,15 +92,31 @@ export function QuizPanel({ question, loading }: QuizPanelProps) {
   // 分析中状态
   if (loading) {
     return (
-      <Card className="h-full">
+      <Card className="h-full border-blue-200 bg-blue-50/30">
         <CardContent className="p-6 space-y-4">
-          <div className="flex items-center gap-3 text-slate-500">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span className="text-sm font-medium">AI正在生成题目...</span>
+          <div className="flex items-center gap-3 text-blue-600">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+            >
+              <Loader2 className="w-5 h-5" />
+            </motion.div>
+            <span className="text-sm font-medium">正在准备题目...</span>
           </div>
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-20 w-full bg-blue-100/50" />
+            <div className="flex gap-2">
+              <Skeleton className="h-12 w-full bg-blue-100/50" />
+              <Skeleton className="h-12 w-full bg-blue-100/50" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-12 w-full bg-blue-100/50" />
+              <Skeleton className="h-12 w-full bg-blue-100/50" />
+            </div>
+          </div>
+          <p className="text-xs text-slate-500 text-center">
+            题目将在案例分析完成后自动生成
+          </p>
         </CardContent>
       </Card>
     );
@@ -110,15 +126,31 @@ export function QuizPanel({ question, loading }: QuizPanelProps) {
   if (!question) {
     return (
       <Card className="h-full flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-          <Sparkles className="w-10 h-10 text-slate-400" />
+        <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-4 relative">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+          >
+            <Sparkles className="w-10 h-10 text-amber-500" />
+          </motion.div>
+          <motion.div
+            className="absolute -top-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center"
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            <Loader2 className="w-3 h-3 text-white animate-spin" />
+          </motion.div>
         </div>
         <h3 className="text-lg font-medium text-slate-700 mb-2">
-          等待题目生成
+          题目生成中
         </h3>
-        <p className="text-sm text-slate-500 max-w-sm">
-          AI分析完成后，将基于案例自动生成符合法考大纲的模拟题
+        <p className="text-sm text-slate-500 max-w-sm mb-4">
+          正在基于案例分析结果生成符合法考大纲的模拟题...
         </p>
+        <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-full">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          <span>请稍候，马上就好</span>
+        </div>
       </Card>
     );
   }

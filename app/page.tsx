@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/layout/Header';
 import { LoadingOverlay } from '@/components/layout/LoadingOverlay';
 import { CaseInputPanel } from '@/components/case-input/CaseInputPanel';
 import { AnalysisPanel } from '@/components/analysis-result/AnalysisPanel';
 import { QuizPanel } from '@/components/quiz-section/QuizPanel';
+import { AnalysisProgress, AnalysisPhase } from '@/components/analysis-result/AnalysisProgress';
 import { useCaseStore } from '@/stores/useCaseStore';
 import { CaseInput, CaseAnalysis, StreamChunk } from '@/types';
 
@@ -26,11 +27,15 @@ export default function Home() {
     saveToHistory,
   } = useCaseStore();
 
+  // 分析阶段状态
+  const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase>('understanding');
+
   const handleSubmit = useCallback(async (caseData: CaseInput) => {
     setCurrentCase(caseData);
     setAnalyzing(true);
     setError(null);
     clearThinking();
+    setAnalysisPhase('understanding');
 
     try {
       const response = await fetch('/api/analyze-case', {
@@ -76,6 +81,10 @@ export default function Home() {
             if (chunk.type === 'thinking' && chunk.content) {
               accumulatedThinking += chunk.content;
               appendThinking(chunk.content);
+              // 进入推理阶段
+              if (analysisPhase === 'understanding') {
+                setAnalysisPhase('reasoning');
+              }
             } else if (chunk.type === 'analysis' && chunk.data) {
               finalAnalysis = chunk.data;
             } else if (chunk.type === 'error') {
@@ -89,6 +98,7 @@ export default function Home() {
 
       if (finalAnalysis) {
         setAnalysis(finalAnalysis);
+        setAnalysisPhase('complete');
         // 保存到历史记录
         setTimeout(() => {
           saveToHistory();
@@ -103,9 +113,16 @@ export default function Home() {
     } finally {
       setAnalyzing(false);
     }
-  }, [setCurrentCase, setAnalyzing, setError, clearThinking, appendThinking, setAnalysis, saveToHistory]);
+  }, [setCurrentCase, setAnalyzing, setError, clearThinking, appendThinking, setAnalysis, saveToHistory, analysisPhase]);
 
   const isStreaming = isAnalyzing && thinkingContent.length > 0 && !currentAnalysis;
+
+  // 当 thinkingContent 很长但还没收到分析结果时，进入题目生成阶段
+  useEffect(() => {
+    if (isAnalyzing && thinkingContent.length > 200 && !currentAnalysis) {
+      setAnalysisPhase('generating');
+    }
+  }, [thinkingContent, isAnalyzing, currentAnalysis]); 
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -143,7 +160,15 @@ export default function Home() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
+              className="space-y-4"
             >
+              {/* Analysis Progress Indicator */}
+              {(isAnalyzing || analysisPhase === 'complete') && (
+                <AnalysisProgress 
+                  phase={analysisPhase} 
+                  thinkingLength={thinkingContent.length}
+                />
+              )}
               <AnalysisPanel
                 analysis={currentAnalysis}
                 thinkingContent={thinkingContent}
@@ -171,6 +196,14 @@ export default function Home() {
               onSubmit={handleSubmit} 
               loading={isAnalyzing} 
             />
+            
+            {/* Mobile Analysis Progress */}
+            {(isAnalyzing || analysisPhase === 'complete') && (
+              <AnalysisProgress 
+                phase={analysisPhase} 
+                thinkingLength={thinkingContent.length}
+              />
+            )}
             
             {currentAnalysis && (
               <>
