@@ -6,17 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SubjectSelector } from './SubjectSelector';
+import { PresetCaseSelector } from './PresetCaseSelector';
 import { SubjectArea, CaseInput } from '@/types';
 import { useCaseStore } from '@/stores/useCaseStore';
+import { PresetCase } from '@/lib/presetCases';
 import { motion } from 'framer-motion';
-
-const PRESET_CASE = `案例：李某盗窃案
-
-李某深夜潜入王某家中，窃得现金5000元及手机一部。在准备离开时，被回家的王某发现。王某上前阻拦并呼喊抓贼。李某为抗拒抓捕，随手拿起桌上的水果刀威胁王某："别过来，否则捅死你！"随后逃离现场。
-
-经鉴定，被盗物品总价值6500元。李某于次日被公安机关抓获。
-
-问题：李某的行为应当如何定性？`;
 
 interface CaseInputPanelProps {
   onSubmit: (data: CaseInput) => void;
@@ -76,9 +70,9 @@ export function CaseInputPanel({ onSubmit, loading }: CaseInputPanelProps) {
     onSubmit(caseData);
   }, [content, subjectArea, onSubmit]);
 
-  const handleUsePreset = useCallback(() => {
-    setContent(PRESET_CASE);
-    setSubjectArea(SubjectArea.CRIMINAL_LAW);
+  const handleSelectPreset = useCallback((presetCase: PresetCase) => {
+    setContent(presetCase.content);
+    setSubjectArea(presetCase.subject);
     setError(null);
   }, []);
 
@@ -111,20 +105,8 @@ export function CaseInputPanel({ onSubmit, loading }: CaseInputPanelProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Preset Button */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <Button
-            variant="outline"
-            className="w-full gap-2 border-dashed border-amber-400 text-amber-700 hover:bg-amber-50"
-            onClick={handleUsePreset}
-          >
-            <Sparkles className="w-4 h-4" />
-            使用预设案例（刑法-财产犯罪）
-          </Button>
-        </motion.div>
+        {/* Preset Case Selector */}
+        <PresetCaseSelector onSelect={handleSelectPreset} />
 
         {/* Textarea */}
         <div className="space-y-2">
