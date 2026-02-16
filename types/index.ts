@@ -87,12 +87,19 @@ export interface DifficultyInfo {
   reasoning: string;         // 难度判定理由
 }
 
+export interface QuestionExplanation {
+  summary: string;           // 一句话总结正确答案
+  legalBasis: string[];      // 法律依据分点说明
+  reasoning: string[];       // 推理过程分点说明
+  conclusion: string;        // 结论
+}
+
 export interface GeneratedQuestion {
   type: QuestionType;
   question: string;          // 题目内容
   options?: QuestionOption[]; // 选择题选项
   correctAnswer: string;     // 正确答案（A/B/C/D或文字）
-  explanation: string;       // 详细解析
+  explanation: QuestionExplanation;  // 结构化详细解析
   commonMistakes: string[];  // 常见错误分析
   relatedArticles: string[]; // 相关法条引用
 }

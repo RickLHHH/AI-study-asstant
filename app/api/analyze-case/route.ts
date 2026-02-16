@@ -50,7 +50,12 @@ JSON Schema:
       }
     ],
     "correctAnswer": "string",
-    "explanation": "string (详细解析，包含法律依据)",
+    "explanation": {
+      "summary": "string (用1句话总结为什么这个答案是正确的)",
+      "legalBasis": ["string (法律依据1)", "string (法律依据2)"],
+      "reasoning": ["string (推理步骤1)", "string (推理步骤2)"],
+      "conclusion": "string (最终结论)"
+    },
     "commonMistakes": ["string"],
     "relatedArticles": ["string"]
   },

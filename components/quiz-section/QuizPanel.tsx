@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Clock, RotateCcw, Play, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle2, Clock, RotateCcw, Play, Sparkles, Loader2, FileText, ClipboardList } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -122,11 +122,11 @@ export function QuizPanel({ question, loading }: QuizPanelProps) {
     );
   }
 
-  // 等待题目生成状态
-  if (!question) {
+  // 等待题目生成状态 - 只有当正在分析中时才显示
+  if (!question && loading) {
     return (
-      <Card className="h-full flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-4 relative">
+      <Card className="h-full flex flex-col items-center justify-center p-8 text-center border-amber-200 bg-amber-50/30">
+        <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-4 relative">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
@@ -147,7 +147,7 @@ export function QuizPanel({ question, loading }: QuizPanelProps) {
         <p className="text-sm text-slate-500 max-w-sm mb-4">
           正在基于案例分析结果生成符合法考大纲的模拟题...
         </p>
-        <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-full">
+        <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-100 px-3 py-2 rounded-full">
           <Loader2 className="w-3 h-3 animate-spin" />
           <span>请稍候，马上就好</span>
         </div>
@@ -155,8 +155,29 @@ export function QuizPanel({ question, loading }: QuizPanelProps) {
     );
   }
 
+  // 未开始分析状态 - 用户刚进入页面，什么都没做
+  if (!question && !loading) {
+    return (
+      <Card className="h-full flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+          <ClipboardList className="w-10 h-10 text-slate-400" />
+        </div>
+        <h3 className="text-lg font-medium text-slate-700 mb-2">
+          等待答题
+        </h3>
+        <p className="text-sm text-slate-500 max-w-sm mb-4">
+          在左侧输入案例并点击"开始分析"，AI将自动生成模拟题供您练习
+        </p>
+        <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-100 px-3 py-2 rounded-full">
+          <FileText className="w-3 h-3" />
+          <span>请先完成案例分析</span>
+        </div>
+      </Card>
+    );
+  }
+
   // 题目已生成但用户未开始答题
-  if (!hasStarted) {
+  if (!hasStarted && question) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -206,6 +227,11 @@ export function QuizPanel({ question, loading }: QuizPanelProps) {
         </motion.div>
       </motion.div>
     );
+  }
+
+  // 类型守卫：如果执行到这里 question 应该存在
+  if (!question) {
+    return null;
   }
 
   const isCorrect = hasSubmitted && selectedOption === question.correctAnswer;
@@ -316,7 +342,7 @@ export function QuizPanel({ question, loading }: QuizPanelProps) {
       )}
 
       {/* 解析 */}
-      {hasSubmitted && (
+      {hasSubmitted && question.explanation && (
         <ExplanationView
           explanation={question.explanation}
           commonMistakes={question.commonMistakes}
